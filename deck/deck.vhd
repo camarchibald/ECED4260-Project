@@ -11,13 +11,13 @@ LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
 USE IEEE.numeric_std.all;  
 
-Entity deck IS
+ENTITY deck IS
 	PORT 	  (CLK: IN STD_LOGIC; -- Rising edge clock							
 				SHUFFLE_START: IN STD_LOGIC; -- Initiate shuffling					
-				SHUFFLE_READY: OUT STD_LOGIC; -- Low until shuffling complete
+				SHUFFLE_READY: OUT STD_LOGIC := '1'; -- Low until shuffling complete
 				SEED: IN STD_LOGIC_VECTOR(5 DOWNTO 0); -- Seed to initialize lfsr
 				CARD_START: IN STD_LOGIC; -- Initiate drawing card
-				CARD_READY: OUT STD_LOGIC; -- Low until card value ready
+				CARD_READY: OUT STD_LOGIC := '1'; -- Low until card value ready
 				CARD: OUT STD_LOGIC_VECTOR(3 DOWNTO 0)); -- Card value			
 END ENTITY;
 
@@ -34,14 +34,22 @@ ARCHITECTURE Behaviour OF deck IS
 				OUTPUT: BUFFER STD_LOGIC_VECTOR(5 DOWNTO 0)); -- Value of generator
 	END COMPONENT;
 
-	TYPE T_STATE IS (RESET);
-	SIGNAL STATE: T_STATE := RESET;
+	-- Deck states
+	TYPE T_STATE IS (S_RESET, S_SHUFFLE_START, S_LFSR_SETTING, S_LFSR_SET);
+	SIGNAL STATE: T_STATE := S_RESET;
 
-	SIGNAL LFSR_SET_START, LFSR_SHIFT_START, CIRCULAR_SET_START, CIRCULAR_SHIFT_START: STD_LOGIC := '0';
+	-- Signals to connect to lfsr, circular counter
+	SIGNAL LFSR_SET_START, LFSR_SHIFT_START, CIRCULAR_SET_START, CIRCULAR_SHIFT_START: STD_LOGIC := '0'; -- Initial zero (don't start anything)
 	SIGNAL LFSR_SET_READY, LFSR_SHIFT_READY, CIRCULAR_SET_READY, CIRCULAR_SHIFT_READY: STD_LOGIC;
 	SIGNAL LFSR_SET_VAL, CIRCULAR_SET_VAL, LFSR_OUTPUT, CIRCULAR_OUTPUT: STD_LOGIC_VECTOR(5 DOWNTO 0);
 
+	-- Holds 1 if the card in that position from the unshuffled deck in that position has been used already
+	TYPE T_USED_UNSHIFFLED_CARDS IS ARRAY(0 TO 51) OF STD_LOGIC;
+	SIGNAL USED_UNSHUFFLED_CARDS: T_USED_UNSHIFFLED_CARDS := (OTHERS => '0');
+
+	-- Array of unshuffled cards (in order), and array of shuffled cards (cards being placed in the deck)
 	TYPE T_CARDS IS ARRAY(0 TO 51) OF STD_LOGIC_VECTOR(3 DOWNTO 0);
+	SIGNAL SHUFFLED_CARDS : T_CARDS;
 	CONSTANT UNSHUFFLED_CARDS : T_CARDS := (
 		0 => STD_LOGIC_VECTOR(to_unsigned(1, 4)),
 		1 => STD_LOGIC_VECTOR(to_unsigned(1, 4)),
@@ -99,9 +107,29 @@ ARCHITECTURE Behaviour OF deck IS
 	
 
 BEGIN
+	-- lfsr and circular counter instances
 	lfsr: lfsr_circular_counter GENERIC MAP (MODE => '0') PORT MAP (CLK, LFSR_SET_START, LFSR_SET_READY, LFSR_SET_VAL, LFSR_SHIFT_START, LFSR_SHIFT_READY, LFSR_OUTPUT);
 	circular: lfsr_circular_counter GENERIC MAP (MODE => '1') PORT MAP (CLK, CIRCULAR_SET_START, CIRCULAR_SET_READY, CIRCULAR_SET_VAL, CIRCULAR_SHIFT_START, CIRCULAR_SHIFT_READY, CIRCULAR_OUTPUT);
 	
+	LFSR_SET_VAL <= SEED;
+
+	PROCESS (CLK)
+	BEGIN
+		IF rising_edge(CLK) THEN
+			IF (STATE = S_RESET AND SHUFFLE_START <= '1') THEN
+				STATE <= S_SHUFFLE_START;
+				SHUFFLE_READY <= '0';
+				LFSR_SET_START <= '1';
+
+			ELSIF (STATE = S_SHUFFLE_START AND LFSR_SET_READY = '0') THEN
+				STATE <= S_LFSR_SETTING;
+				LFSR_SET_START <= '0';
+			
+			ELSIF (STATE = S_LFSR_SETTING AND LFSR_SET_READY = '1') THEN
+				STATE <= S_LFSR_SET;
+			END IF;
+		END IF;
+	END PROCESS;
 	
 END Behaviour;
 
