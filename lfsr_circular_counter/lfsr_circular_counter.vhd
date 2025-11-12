@@ -6,7 +6,7 @@
 -- Architecture: 
 -- Description: Acts as two modules depending on mode.
 -- 	Mode 0: Pseudo random number generator of 6 bits, using lfsr. 
---		Mode 1: Circular counter 
+--		Mode 1: Circular counter (unused in project)
 -- Acknowledgements: https://docs.amd.com/v/u/en-US/xapp052, shows table of tap locations for various bits
 -------------------------------------------------
 LIBRARY IEEE;
@@ -14,7 +14,7 @@ USE IEEE.std_logic_1164.ALL;
 USE IEEE.numeric_std.all;  
 
 ENTITY lfsr_circular_counter IS
-	GENERIC (MODE: STD_LOGIC := '1'; -- Mode 0 LFSR, mode 1 circular counter
+	GENERIC (MODE: STD_LOGIC := '0'; -- Mode 0 LFSR, mode 1 circular counter
 				MAX: INTEGER := 51); -- Maximum value 
 	PORT 	  (CLK: IN STD_LOGIC; -- Rising edge clock
 				SET_START: IN STD_LOGIC; -- Initiate setting
@@ -54,6 +54,7 @@ BEGIN
 				OUTPUT(4) <= OUTPUT(3);
 				OUTPUT(5) <= OUTPUT(4);
 			
+			-- Circular counter unused
 			ELSIF (STATE = S_SHIFT_SET_START AND SHIFT_START = '1' AND MODE = '1') THEN -- Shift the circular counter, SHIFT_READY low
 				SHIFT_READY <= '0';
 				STATE <= S_SHIFTING_DONE;
@@ -64,7 +65,7 @@ BEGIN
 				END IF;
 
 			ELSIF (STATE = S_SHIFTING_RANDOM) THEN -- If random shift is above 51, shift again
-				IF (to_integer(UNSIGNED(OUTPUT)) >= MAX) THEN 
+				IF (to_integer(UNSIGNED(OUTPUT)) > MAX) THEN 
 					OUTPUT(0) <= OUTPUT(5) XNOR OUTPUT(4); 
 					OUTPUT(1) <= OUTPUT(0);
 					OUTPUT(2) <= OUTPUT(1);
@@ -77,7 +78,7 @@ BEGIN
 
 			ELSIF (STATE = S_SHIFTING_DONE) THEN -- Shift done, SHIFT_READY high
 				SHIFT_READY <= '1';
-				IF (SHIFT_START <= '0') THEN -- Once start released, ready to shift or set again
+				IF (SHIFT_START = '0') THEN -- Once start released, ready to shift or set again
 					STATE <= S_SHIFT_SET_START; 
 				END IF;
 			END IF;
