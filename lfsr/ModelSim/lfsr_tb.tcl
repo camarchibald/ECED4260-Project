@@ -14,4 +14,4 @@ vsim work.testbench -Lf 220model -Lf altera_mf
 # show waveforms specified in wave.do
 do lfsr_wave.do
 # advance the simulation the desired amount of time
-run 2000 ns
+run 3000 ns

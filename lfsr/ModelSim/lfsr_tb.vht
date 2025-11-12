@@ -4,7 +4,7 @@
 -- Date: 2025-10-30
 -- File Name: lfsr_tb.vht
 -- Architecture: 
--- Description: Test the pseudo random number generator by loading various numbers and observing the sequence of numbers
+-- Description: Test the pseudo random number generator by loading a number and observing the shifting
 -- Acknowledgements: 
 -------------------------------------------------
 LIBRARY IEEE;                                               
@@ -16,86 +16,61 @@ END testbench;
 
 ARCHITECTURE Behaviour OF testbench IS
    COMPONENT lfsr
-	PORT 	  (CLK, SET: IN STD_LOGIC; 							-- Clock signal actuate updates on rising edge, set signal active high
-				SET_VAL: IN STD_LOGIC_VECTOR(5 DOWNTO 0); 	-- Reset number
-				OUTPUT: OUT STD_LOGIC_VECTOR(5 DOWNTO 0)); 	-- Value of counter
+	PORT 	  (CLK: IN STD_LOGIC; -- Rising edge clock
+				SET_START: IN STD_LOGIC; -- Initiate setting
+				SET_READY: OUT STD_LOGIC := '1'; -- Low until setting complete
+				SET_VAL: IN STD_LOGIC_VECTOR(5 DOWNTO 0); -- Reset number
+				SHIFT_START: IN STD_LOGIC; -- Initiate shifting
+				SHIFT_READY: OUT STD_LOGIC := '1'; -- Low until shifting complete
+				OUTPUT: BUFFER STD_LOGIC_VECTOR(5 DOWNTO 0)); -- Value of generator
    END COMPONENT;
 
-   SIGNAL CLK_TB: STD_LOGIC := '0';
-   SIGNAL SET_TB: STD_LOGIC;
-   SIGNAL SET_VAL_TB, OUTPUT_TB: STD_LOGIC_VECTOR(5 DOWNTO 0);
+   SIGNAL CLK: STD_LOGIC := '0';
+   SIGNAL SET_START: STD_LOGIC := '0';
+   SIGNAL SET_READY: STD_LOGIC;
+   SIGNAL SET_VAL: STD_LOGIC_VECTOR(5 DOWNTO 0);
+   SIGNAL SHIFT_START: STD_LOGIC := '0';
+   SIGNAL SHIFT_READY: STD_LOGIC;
+   SIGNAL OUTPUT: STD_LOGIC_VECTOR(5 DOWNTO 0);
+
+   -- Testbench state
+   TYPE T_STATE IS (S1, S2, S3, S4);
+   SIGNAL STATE: T_STATE;
 
 BEGIN
-   inst: lfsr PORT MAP (CLK_TB, SET_TB, SET_VAL_TB, OUTPUT_TB);
+   inst: lfsr PORT MAP (CLK, SET_START, SET_READY, SET_VAL, SHIFT_START, SHIFT_READY, OUTPUT);
 
-   PROCESS           
-	BEGIN
-
-   -- Load 4 then run counter 6 times
-   SET_VAL_TB <= "000100";
-   SET_TB <= '1';
-
-   WAIT FOR 5 ns;
-
-   CLK_TB <= '1';
-
-   WAIT FOR 5 ns;
-
-   CLK_TB <= '0';
-   SET_TB <= '0';
-
-   FOR I IN 1 TO 6 LOOP
+   -- Run clock continuously
+   PROCESS
+   BEGIN
+   SET_VAL <= "101010";
+   WHILE (1 = 1) LOOP
       WAIT FOR 5 ns;
-      CLK_TB <= '1';
-
+      CLK <= '1';
       WAIT FOR 5 ns;
-      CLK_TB <= '0';
+      CLK <= '0';
    END LOOP;
-
-   -- Load 37 then run counter 80 times
-   SET_VAL_TB <= "100101";
-   SET_TB <= '1';
-
-   WAIT FOR 5 ns;
-
-   CLK_TB <= '1';
-
-   WAIT FOR 5 ns;
-
-   CLK_TB <= '0';
-   SET_TB <= '0';
-
-   FOR I IN 1 TO 80 LOOP
-      WAIT FOR 5 ns;
-      CLK_TB <= '1';
-
-      WAIT FOR 5 ns;
-      CLK_TB <= '0';
-   END LOOP;
-
-   -- Load 0 then run counter 5 times
-   SET_VAL_TB <= "000000";
-   SET_TB <= '1';
-
-   WAIT FOR 5 ns;
-
-   CLK_TB <= '1';
-
-   WAIT FOR 5 ns;
-
-   CLK_TB <= '0';
-   SET_TB <= '0';
-
-   FOR I IN 1 TO 5 LOOP
-      WAIT FOR 5 ns;
-      CLK_TB <= '1';
-
-      WAIT FOR 5 ns;
-      CLK_TB <= '0';
-   END LOOP;
-
-   WAIT;
-
    END PROCESS;
 
+   -- Testbench state machine
+   PROCESS (CLK)
+   BEGIN
+      IF rising_edge(CLK) THEN
+         IF (STATE = S1 AND SET_READY = '1') THEN
+            SET_START <= '1';
+         ELSIF (STATE = S1 AND SET_READY = '0') THEN
+            STATE <= S2;
+            SET_START <= '0';
+         ELSIF (STATE = S2 AND SET_READY = '1') THEN
+            STATE <= S3;
+         ELSIF (STATE = S3 AND SHIFT_READY = '1') THEN
+            SHIFT_START <= '1';
+         ELSIF (STATE = S3 AND SHIFT_READY = '0') THEN
+            STATE <= S4;
+            SHIFT_START <= '0';
+         ELSIF (STATE = S4 AND SHIFT_READY = '1') THEN
+            STATE <= S3;
+         END IF;
+      END IF;
+   END PROCESS;
 END;
