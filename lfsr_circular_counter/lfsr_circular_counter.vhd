@@ -14,7 +14,7 @@ USE IEEE.std_logic_1164.ALL;
 USE IEEE.numeric_std.all;  
 
 ENTITY lfsr_circular_counter IS
-	GENERIC (MODE: STD_LOGIC; -- Mode 0 LFSR, mode 1 circular counter
+	GENERIC (MODE: STD_LOGIC := '1'; -- Mode 0 LFSR, mode 1 circular counter
 				MAX: INTEGER := 51); -- Maximum value 
 	PORT 	  (CLK: IN STD_LOGIC; -- Rising edge clock
 				SET_START: IN STD_LOGIC; -- Initiate setting
@@ -26,7 +26,7 @@ ENTITY lfsr_circular_counter IS
 END ENTITY;
 
 ARCHITECTURE Behaviour OF lfsr_circular_counter IS
-	TYPE STATE_T IS (S_SET_START, S_SETTING, S_SHIFT_SET_START, S_SHIFTING);
+	TYPE STATE_T IS (S_SET_START, S_SETTING, S_SHIFT_SET_START, S_SHIFTING_RANDOM, S_SHIFTING_DONE);
 	SIGNAL STATE: STATE_T := S_SET_START; -- State starts at S_SET_START (need to load starting value)		
 
 BEGIN
@@ -44,27 +44,38 @@ BEGIN
 					STATE <= S_SHIFT_SET_START;
 				END IF;
 
-			ELSIF (STATE = S_SHIFT_SET_START AND SHIFT_START = '1') THEN -- Shift the LFSR, SHIFT_READY low
-				STATE <= S_SHIFTING;
+			ELSIF (STATE = S_SHIFT_SET_START AND SHIFT_START = '1' AND MODE = '0') THEN -- Shift the LFSR, SHIFT_READY low
 				SHIFT_READY <= '0';
-				
-				IF (MODE = '0') THEN 
-					OUTPUT(0) <= OUTPUT(5) XNOR OUTPUT(4); -- Otherwise shift all by one, taps go into the first element
+				STATE <= S_SHIFTING_RANDOM;
+				OUTPUT(0) <= OUTPUT(5) XNOR OUTPUT(4); -- Otherwise shift all by one, taps go into the first element
+				OUTPUT(1) <= OUTPUT(0);
+				OUTPUT(2) <= OUTPUT(1);
+				OUTPUT(3) <= OUTPUT(2);
+				OUTPUT(4) <= OUTPUT(3);
+				OUTPUT(5) <= OUTPUT(4);
+			
+			ELSIF (STATE = S_SHIFT_SET_START AND SHIFT_START = '1' AND MODE = '1') THEN -- Shift the circular counter, SHIFT_READY low
+				SHIFT_READY <= '0';
+				STATE <= S_SHIFTING_DONE;
+				IF (to_integer(UNSIGNED(OUTPUT)) >= MAX) THEN -- IF value greater than the max for the counter, loop to zero
+					OUTPUT <= "000000"; 										
+				ELSE -- Otherwise increment counter
+					OUTPUT <= STD_LOGIC_VECTOR(UNSIGNED(OUTPUT) + 1);
+				END IF;
+
+			ELSIF (STATE = S_SHIFTING_RANDOM) THEN -- If random shift is above 51, shift again
+				IF (to_integer(UNSIGNED(OUTPUT)) >= MAX) THEN 
+					OUTPUT(0) <= OUTPUT(5) XNOR OUTPUT(4); 
 					OUTPUT(1) <= OUTPUT(0);
 					OUTPUT(2) <= OUTPUT(1);
 					OUTPUT(3) <= OUTPUT(2);
 					OUTPUT(4) <= OUTPUT(3);
 					OUTPUT(5) <= OUTPUT(4);
-
-				ELSIF (MODE = '1') THEN
-					IF (to_integer(UNSIGNED(OUTPUT)) >= MAX) THEN -- IF value greater than the max for the counter, loop to zero
-						OUTPUT <= "000000"; 										
-					ELSE -- Otherwise increment counter
-						OUTPUT <= STD_LOGIC_VECTOR(UNSIGNED(OUTPUT) + 1);
-					END IF;
+				ELSE
+					STATE <= S_SHIFTING_DONE;
 				END IF;
 
-			ELSIF (STATE = S_SHIFTING) THEN	-- LFSR shifted, SHIFT_READY high
+			ELSIF (STATE = S_SHIFTING_DONE) THEN -- Shift done, SHIFT_READY high
 				SHIFT_READY <= '1';
 				IF (SHIFT_START <= '0') THEN -- Once start released, ready to shift or set again
 					STATE <= S_SHIFT_SET_START; 

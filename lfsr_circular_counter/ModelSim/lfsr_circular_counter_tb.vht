@@ -40,7 +40,7 @@ ARCHITECTURE Behaviour OF testbench IS
    SIGNAL STATE: T_STATE;
 
 BEGIN
-   inst: lfsr_circular_counter GENERIC MAP (MODE => '1') PORT MAP (CLK, SET_START, SET_READY, SET_VAL, SHIFT_START, SHIFT_READY, OUTPUT);
+   inst: lfsr_circular_counter GENERIC MAP (MODE => '0') PORT MAP (CLK, SET_START, SET_READY, SET_VAL, SHIFT_START, SHIFT_READY, OUTPUT);
 
    -- Run clock continuously
    PROCESS
