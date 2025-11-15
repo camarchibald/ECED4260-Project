@@ -23,8 +23,7 @@ END ENTITY;
 
 ARCHITECTURE Behaviour OF deck IS
 	COMPONENT lfsr_circular_counter
-	GENERIC (MODE: STD_LOGIC := '0'; -- Mode 0 LFSR, mode 1 circular counter
-				MAX: INTEGER := 51); -- Maximum value 
+	GENERIC (MAX: INTEGER := 51); -- Maximum value 
 	PORT 	  (CLK: IN STD_LOGIC; -- Rising edge clock
 				SET_START: IN STD_LOGIC; -- Initiate setting
 				SET_READY: OUT STD_LOGIC := '1'; -- Low until setting complete
@@ -110,7 +109,7 @@ ARCHITECTURE Behaviour OF deck IS
 
 BEGIN
 	-- lfsr and circular counter instances
-	lfsr: lfsr_circular_counter GENERIC MAP (MODE => '0') PORT MAP (CLK, LFSR_SET_START, LFSR_SET_READY, LFSR_SET_VAL, LFSR_SHIFT_START, LFSR_SHIFT_READY, LFSR_OUTPUT);
+	lfsr: lfsr_circular_counter PORT MAP (CLK, LFSR_SET_START, LFSR_SET_READY, LFSR_SET_VAL, LFSR_SHIFT_START, LFSR_SHIFT_READY, LFSR_OUTPUT);
 	
 	LFSR_SET_VAL <= SEED;
 

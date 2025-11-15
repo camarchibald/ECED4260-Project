@@ -16,8 +16,7 @@ END testbench;
 
 ARCHITECTURE Behaviour OF testbench IS
    COMPONENT lfsr_circular_counter
-   GENERIC (MODE: STD_LOGIC; -- Mode 0 LFSR, mode 1 circular counter
-				MAX: INTEGER := 51); -- Maximum value 
+   GENERIC (MAX: INTEGER := 51); -- Maximum value 
 	PORT 	  (CLK: IN STD_LOGIC; -- Rising edge clock
 				SET_START: IN STD_LOGIC; -- Initiate setting
 				SET_READY: OUT STD_LOGIC := '1'; -- Low until setting complete
@@ -40,7 +39,7 @@ ARCHITECTURE Behaviour OF testbench IS
    SIGNAL STATE: T_STATE;
 
 BEGIN
-   inst: lfsr_circular_counter GENERIC MAP (MODE => '0') PORT MAP (CLK, SET_START, SET_READY, SET_VAL, SHIFT_START, SHIFT_READY, OUTPUT);
+   inst: lfsr_circular_counter PORT MAP (CLK, SET_START, SET_READY, SET_VAL, SHIFT_START, SHIFT_READY, OUTPUT);
 
    -- Run clock continuously
    PROCESS
