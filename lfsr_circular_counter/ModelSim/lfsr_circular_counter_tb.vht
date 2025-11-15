@@ -16,7 +16,7 @@ END testbench;
 
 ARCHITECTURE Behaviour OF testbench IS
    COMPONENT lfsr_circular_counter
-   GENERIC (MAX: INTEGER := 51); -- Maximum value 
+   GENERIC (HIGH_BIT: INTEGER := 5); -- Highest bit in register
 	PORT 	  (CLK: IN STD_LOGIC; -- Rising edge clock
 				SET_START: IN STD_LOGIC; -- Initiate setting
 				SET_READY: OUT STD_LOGIC := '1'; -- Low until setting complete
@@ -44,7 +44,7 @@ BEGIN
    -- Run clock continuously
    PROCESS
    BEGIN
-   SET_VAL <= "101010";
+   SET_VAL <= "101010"; -- Seed
    WHILE (1 = 1) LOOP
       WAIT FOR 5 ns;
       CLK <= '1';

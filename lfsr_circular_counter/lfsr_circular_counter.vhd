@@ -12,19 +12,21 @@ USE IEEE.std_logic_1164.ALL;
 USE IEEE.numeric_std.all;  
 
 ENTITY lfsr_circular_counter IS
-	GENERIC (MAX: INTEGER := 51); -- Maximum value 
+	GENERIC (HIGH_BIT: INTEGER := 5); -- Highest bit in register
 	PORT 	  (CLK: IN STD_LOGIC; -- Rising edge clock
 				SET_START: IN STD_LOGIC; -- Initiate setting
 				SET_READY: OUT STD_LOGIC := '1'; -- Low until setting complete
-				SET_VAL: IN STD_LOGIC_VECTOR(5 DOWNTO 0); -- Reset number
+				SET_VAL: IN STD_LOGIC_VECTOR(HIGH_BIT DOWNTO 0); -- Reset number
 				SHIFT_START: IN STD_LOGIC; -- Initiate shifting
 				SHIFT_READY: OUT STD_LOGIC := '1'; -- Low until shifting complete
-				OUTPUT: BUFFER STD_LOGIC_VECTOR(5 DOWNTO 0)); -- Value of generator
+				OUTPUT: BUFFER STD_LOGIC_VECTOR(HIGH_BIT DOWNTO 0)); -- Value of generator
 END ENTITY;
 
 ARCHITECTURE Behaviour OF lfsr_circular_counter IS
 	TYPE STATE_T IS (S_SET_START, S_SETTING, S_SHIFT_SET_START, S_SHIFTING_RANDOM, S_SHIFTING_CHECK, S_SHIFTING_DONE);
-	SIGNAL STATE: STATE_T := S_SET_START; -- State starts at S_SET_START (need to load starting value)		
+	SIGNAL STATE: STATE_T := S_SET_START; -- State starts at S_SET_START (need to load starting value)
+
+	CONSTANT MAX: UNSIGNED(HIGH_BIT DOWNTO 0) := to_unsigned(51, HIGH_BIT + 1); -- Maximum value
 
 BEGIN
 	PROCESS (CLK)
@@ -53,7 +55,7 @@ BEGIN
 				OUTPUT(5) <= OUTPUT(4);
 				
 			ELSIF (STATE = S_SHIFTING_CHECK) THEN -- Check if over 51, need to do the random shift again
-				IF (to_integer(UNSIGNED(OUTPUT)) > MAX) THEN 
+				IF (UNSIGNED(OUTPUT) > MAX) THEN 
 					STATE <= S_SHIFTING_RANDOM;
 				ELSE
 					STATE <= S_SHIFTING_DONE;

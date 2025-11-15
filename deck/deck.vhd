@@ -23,14 +23,14 @@ END ENTITY;
 
 ARCHITECTURE Behaviour OF deck IS
 	COMPONENT lfsr_circular_counter
-	GENERIC (MAX: INTEGER := 51); -- Maximum value 
+	GENERIC (HIGH_BIT: INTEGER := 5); -- Highest bit in register
 	PORT 	  (CLK: IN STD_LOGIC; -- Rising edge clock
 				SET_START: IN STD_LOGIC; -- Initiate setting
 				SET_READY: OUT STD_LOGIC := '1'; -- Low until setting complete
-				SET_VAL: IN STD_LOGIC_VECTOR(5 DOWNTO 0); -- Reset number
+				SET_VAL: IN STD_LOGIC_VECTOR(HIGH_BIT DOWNTO 0); -- Reset number
 				SHIFT_START: IN STD_LOGIC; -- Initiate shifting
 				SHIFT_READY: OUT STD_LOGIC := '1'; -- Low until shifting complete
-				OUTPUT: BUFFER STD_LOGIC_VECTOR(5 DOWNTO 0)); -- Value of generator
+				OUTPUT: BUFFER STD_LOGIC_VECTOR(HIGH_BIT DOWNTO 0)); -- Value of generator
 	END COMPONENT;
 
 	-- Deck states
